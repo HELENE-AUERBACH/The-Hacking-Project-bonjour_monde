@@ -48,12 +48,41 @@ def generate_twitter_messages(journalist_sub_array, client)
   end   
 end
 
+def like_twitter_messages(total_number_of_messages_to_like, client)
+  # "liker" les "total_number_of_messages_to_like" derniers tweets (non retweetés) qui ont le hashtag #bonjour_monde
+  tweets = (client.search("#bonjour_monde -filter:retweets", result_type: "recent").uniq { |tweet| tweet.user.id }).take(total_number_of_messages_to_like)
+  tweets.each do |tweet| 
+    client.favorite(tweet)
+    puts "Like #{tweet.text} from #{tweet.user.screen_name}"
+  end
+  #client.favorite(tweets)
+  tweets
+end
+
+def follow_users_from_tweets(tweets, client)
+  # "follow" les dernières personnes qui ont tweeté avec le hashtag #bonjour_monde 
+  if !tweets.nil?
+    tweets.each do |tweet| 
+      client.follow(:screen_name => tweet.user.screen_name)
+      puts "Follow #{tweet.user.screen_name}"
+    end
+  end
+end
+
 client = login_twitter
 journalist_sub_array = draw_of_names(5)
-#puts "#{journalist_sub_array}"
+puts "#{journalist_sub_array}"
 
 #require 'pry'
 #binding.pry # On lance PRY au milieu de la méthode afin de la "débugguer"
 # Ligne qui permet de tweeter à partir de mon compte un message dans l'onglet "Notifications" du user Twitter identifié par son "user_name"
 #client.update("Et maintenant, je te \"re-notifie\" toi, @Toto, avec un hashtag #TotoTataTitiTutu !")
+
 generate_twitter_messages(journalist_sub_array, client)
+tweets = like_twitter_messages(25, client)
+puts "#{tweets}"
+sleep(180)
+tweets.take(15).each_slice(5) do |tweets_subarray|
+  follow_users_from_tweets(tweets_subarray, client)
+  sleep(180)
+end
